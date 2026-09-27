@@ -43,6 +43,38 @@ Requirements: **Xcode 16 or newer**. The app targets **iOS 17+** and has no thir
 
 The project uses Xcode 16's synchronized folders, so any file added under `NutriQuest/` is picked up automatically.
 
+## Web version
+
+`web/` is a browser version of NutriQuest with the same four tabs, all 13 pathways, all 70 Molecule Pals, the five mini-games, ranks, badges and saved progress. It is a static site in plain HTML, CSS and JavaScript, with no build step and no dependencies. Progress is saved in the browser's `localStorage`.
+
+Run it locally from the repository root. ES modules need a web server, so opening `index.html` straight from disk won't work:
+
+```sh
+python3 -m http.server --directory web 8000
+# then open http://localhost:8000
+```
+
+To put it online, serve the `web/` folder from any static host, for example GitHub Pages (deploy from a branch or with a Pages workflow that uploads `web/`).
+
+The educational content is not copied by hand. `web/js/content.js` is generated from `NutriQuest/Content/*.swift`, so the iOS app stays the single source of truth. After you edit the Swift content, regenerate it:
+
+```sh
+python3 web/tools/export_content.py
+```
+
+```
+web/
+  index.html          Page shell
+  css/style.css       Styles (colors and gradients from Components/Theme.swift)
+  js/content.js       Generated content: characters, pathways, quiz, recipes, game data
+  js/data.js          Body locations, families, games, ranks
+  js/store.js         Saved progress (mirrors ProgressStore.swift)
+  js/ui.js            Molecule faces, cards, question card, confetti
+  js/games.js         The five mini-games
+  js/app.js           Tabs, routing and the main screens
+  tools/export_content.py
+```
+
 ## Project layout
 
 ```
