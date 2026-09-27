@@ -12,41 +12,52 @@ export const FAMILIES = [
   { id: 'helpers', title: 'Enzyme Crew', short: 'Enzymes', emoji: '✂️', color: '#00A6C8' },
   { id: 'energy', title: 'Energy Makers', short: 'Energy', emoji: '⚡️', color: '#FF595E' },
 ];
+/** A one-line clue about each family, shown on undiscovered (mystery) pals. */
+export const FAMILY_CLUE = {
+  carbs: 'A carbohydrate. Plants are full of molecules like this one.',
+  fats: "A fatty molecule. It doesn't mix with water.",
+  proteins: 'Part of the protein world: amino acids and the things built from them.',
+  vitamins: 'A vitamin: a tiny helper your body gets from food.',
+  minerals: 'A mineral from your food, or a molecule built around one.',
+  hormones: 'A messenger molecule, or one of the steps on the way to making one.',
+  helpers: 'A helper that cuts, carries, builds or breaks down other molecules.',
+  energy: "Part of your cells' energy-making machinery.",
+};
 export const FAMILY = Object.fromEntries(FAMILIES.map(f => [f.id, f]));
 
-// `map` is the position on the 100 × 160 body grid; locations without one live "inside a cell".
+// `map` is the position on the 200 × 320 body-world grid; locations without one live "inside a cell".
 export const LOCATIONS = [
-  { id: 'brain', name: 'Brain', emoji: '🧠', color: '#F08CAE', map: [44, 11],
+  { id: 'brain', name: 'Brain', emoji: '🧠', color: '#F08CAE', map: [100, 25],
     blurb: "Your command center uses about 20% of your body's energy. It builds its own serotonin and dopamine from amino acids, and its tiny pineal gland makes melatonin at night." },
-  { id: 'mouth', name: 'Mouth', emoji: '👄', color: '#FF7B9C', map: [56, 23],
+  { id: 'mouth', name: 'Mouth', emoji: '👄', color: '#FF7B9C', map: [100, 56],
     blurb: 'Digestion starts here! Teeth crush food into small pieces and saliva adds amylase, an enzyme that begins snipping starch into sugars.' },
-  { id: 'thyroid', name: 'Thyroid', emoji: '🦋', color: '#9B5DE5', map: [50, 35],
+  { id: 'thyroid', name: 'Thyroid', emoji: '🦋', color: '#9B5DE5', map: [100, 78],
     blurb: "A butterfly-shaped gland in your neck. It traps iodine and sticks it onto tyrosine to build thyroid hormones, your metabolism's thermostat." },
-  { id: 'lymph', name: 'Lymph Vessels', emoji: '🛤️', color: '#52B788', map: [36, 42],
+  { id: 'lymph', name: 'Lymph Vessels', emoji: '🛤️', color: '#52B788', map: [79, 101],
     blurb: 'A second highway system. Chylomicrons packed with long-chain fats ride through the lymph before joining the blood near your heart.' },
-  { id: 'bloodstream', name: 'Heart & Blood', emoji: '❤️', color: '#E63946', map: [61, 43],
+  { id: 'bloodstream', name: 'Heart & Blood', emoji: '❤️', color: '#E63946', map: [111, 113],
     blurb: "The body's delivery network. Blood carries glucose, amino acids, fats, vitamins, hormones and oxygen to trillions of cells." },
-  { id: 'liver', name: 'Liver', emoji: '🧪', color: '#A0522D', map: [39, 56],
+  { id: 'liver', name: 'Liver', emoji: '🧪', color: '#A0522D', map: [78, 137],
     blurb: "The body's chemistry lab! It stores glycogen, makes cholesterol and bile, sorts amino acids, turns ammonia into urea, makes ketones and activates vitamin D." },
-  { id: 'stomach', name: 'Stomach', emoji: '🌀', color: '#FF9F1C', map: [61, 57],
+  { id: 'stomach', name: 'Stomach', emoji: '🌀', color: '#FF9F1C', map: [124, 137],
     blurb: 'A stretchy, acid-filled mixing bag. Strong acid unfolds proteins and kills germs while pepsin starts chopping proteins into pieces.' },
-  { id: 'pancreas', name: 'Pancreas', emoji: '⚗️', color: '#F4B400', map: [50, 67],
+  { id: 'pancreas', name: 'Pancreas', emoji: '⚗️', color: '#F4B400', map: [100, 162],
     blurb: 'Does two big jobs: it sends digestive enzymes to the small intestine AND releases insulin into the blood.' },
-  { id: 'kidney', name: 'Kidneys', emoji: '🫘', color: '#B5838D', map: [35, 72],
+  { id: 'kidney', name: 'Kidneys', emoji: '🫘', color: '#B5838D', map: [70, 180],
     blurb: 'Two bean-shaped filters that clean your blood, flush out urea and make the active form of vitamin D.' },
-  { id: 'adrenal', name: 'Adrenal Glands', emoji: '⚡️', color: '#FF006E', map: [65, 72],
+  { id: 'adrenal', name: 'Adrenal Glands', emoji: '⚡️', color: '#FF006E', map: [131, 163],
     blurb: 'Little glands sitting on top of your kidneys. They make adrenaline for fast action and cortisol for stress and waking up.' },
-  { id: 'smallIntestine', name: 'Small Intestine', emoji: '🍝', color: '#F4845F', map: [46, 83],
+  { id: 'smallIntestine', name: 'Small Intestine', emoji: '🍝', color: '#F4845F', map: [100, 192],
     blurb: 'About 6 meters long and lined with tiny fingers called villi. Most nutrients are finished off and absorbed here!' },
-  { id: 'largeIntestine', name: 'Large Intestine', emoji: '🦠', color: '#80B918', map: [64, 88],
+  { id: 'largeIntestine', name: 'Large Intestine', emoji: '🦠', color: '#80B918', map: [124, 204],
     blurb: 'Home to trillions of friendly microbes that ferment fiber into short-chain fatty acids and even make some vitamin K.' },
-  { id: 'reproductive', name: 'Ovaries & Testes', emoji: '🌱', color: '#F72585', map: [50, 98],
+  { id: 'reproductive', name: 'Ovaries & Testes', emoji: '🌱', color: '#F72585', map: [100, 224],
     blurb: 'Glands that use cholesterol to make testosterone and estradiol, the hormones that guide growing up.' },
-  { id: 'skin', name: 'Skin', emoji: '☀️', color: '#FFB703', map: [21, 78],
+  { id: 'skin', name: 'Skin', emoji: '☀️', color: '#FFB703', map: [41, 176],
     blurb: 'Your largest organ! When sunlight hits it, a cholesterol cousin turns into vitamin D.' },
-  { id: 'muscle', name: 'Muscles', emoji: '💪', color: '#EF476F', map: [60.5, 124],
+  { id: 'muscle', name: 'Muscles', emoji: '💪', color: '#EF476F', map: [118, 248],
     blurb: 'Muscles burn glucose and fat for movement, store glycogen, and use amino acids like leucine to grow stronger.' },
-  { id: 'bones', name: 'Bones & Marrow', emoji: '🦴', color: '#8D99AE', map: [39.5, 140],
+  { id: 'bones', name: 'Bones & Marrow', emoji: '🦴', color: '#8D99AE', map: [82, 288],
     blurb: 'Bones store calcium, and the marrow inside builds about 2 million new red blood cells every second!' },
   { id: 'cell', name: 'Body Cell', emoji: '🧫', color: '#00BBF9', map: null,
     blurb: 'The tiny unit of life. Inside, ribosomes build proteins and glycolysis splits glucose in two.' },
@@ -102,6 +113,14 @@ export const GAMES = [
   { id: 'proteinBuilder', title: 'Ribosome Rush', subtitle: 'Link amino acids in order to build real hormones.', mascot: 'ribosome', color: '#00A6C8' },
   { id: 'quiz', title: 'Molecule Quiz', subtitle: 'Ten quick questions. How much do you know?', mascot: 'mito', color: '#FF5C8A' },
 ];
+/** Pals a game can reveal when you finish a round with at least one star. Each one really appears in that game. */
+export const GAME_PALS = {
+  scissors: ['amylase', 'starch', 'maltose', 'glucose', 'fiber'],
+  fatRouter: ['butyrate', 'mct', 'lct', 'omega3', 'chylomicron'],
+  factory: [],
+  proteinBuilder: ['ribosome', 'aminoacid', 'glycine', 'tyrosine', 'phenylalanine', 'leucine'],
+  quiz: ['mito'],
+};
 export const GAME = Object.fromEntries(GAMES.map(g => [g.id, g]));
 /** Games whose best result earns stars (the factory earns stars per recipe instead). */
 export const SCORED_GAMES = ['scissors', 'fatRouter', 'proteinBuilder', 'quiz'];

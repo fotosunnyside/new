@@ -1,16 +1,37 @@
-// The five mini-games, ported from Games/*.swift with the same rules and scoring.
+// The five mini-games (Games/*.swift). Rules and scoring match the iOS app; only the presentation is new.
 import {
-  character, firstName, shortMolecule, LOCATION, RECIPES, recipe as findRecipe, helperToken,
+  character, firstName, shortMolecule, LOCATION, RECIPES, recipe as findRecipe, helperToken, GAME, GAME_PALS,
   FAT_MOLECULES, FAT_ROUTES, routeForCarbons, PEPTIDES, amino, QUIZ_BANK, shuffle, pick,
-} from './data.js';
-import { store } from './store.js';
-import {
-  esc, face, bead, stars, pill, progress, scoreBadge, sectionHeader, questionCard, gameOver,
-  transformationChain, confetti, shake,
-} from './ui.js';
+} from '../data.js';
+import { store } from '../state/store.js';
+import { esc, shake } from '../ui/dom.js';
+import { pal, bead } from '../ui/pal.js';
+import { stars, bar, scoreBadge, speaker, questionCard, transformationChain, sectionTitle, palRow } from '../ui/components.js';
+import { reward, sparkle } from '../ui/fx.js';
 
-const speaker = (id, message) =>
-  `<div class="card row speaker">${face(id, { size: 54, excited: true })}<p class="grow" role="status">${esc(message)}</p></div>`;
+/** Records a finished round, shows the reward moment and reveals the game's pals on a starred round. */
+function finishRound(gameId, { title, score, stars: count }) {
+  const { isBest, gained } = store.record(gameId, score, count);
+  const g = GAME[gameId];
+  reward({ title, emoji: count >= 3 ? '🏆' : count === 2 ? '🎉' : '👍', stars: count, gained, score, isNewBest: isBest, color: g.color });
+  if (count > 0) GAME_PALS[gameId].forEach(id => store.collect(id));
+  return { score, stars: count, isNewBest: isBest };
+}
+
+function summary(gameId, { title, score, stars: count, isNewBest }, lessons) {
+  const pals = GAME_PALS[gameId];
+  return `<div class="stack center game-over">
+    <h1 class="display">${esc(title)}</h1>
+    ${stars(count, 3, 'big')}
+    <p class="score-line">Score ${score}${isNewBest ? ' · <span class="hot">New best!</span>' : ''}</p>
+    <section class="glass wide left">${sectionTitle('What you learned')}<ul class="lessons">${lessons.map(l => `<li>${esc(l)}</li>`).join('')}</ul></section>
+    ${pals.length ? `<section class="glass wide">${sectionTitle('Pals in this game')}${palRow(pals, 40)}
+      <p class="muted small">${count > 0 ? 'You met every pal in this game!' : 'Earn at least one star to discover them.'}</p></section>` : ''}
+    <div class="row buttons wide"><button class="btn ghost" data-action="replay">↻ Play again</button><a class="btn" href="#play">Arcade</a></div>
+  </div>`;
+}
+
+const hud = (left, right) => `<div class="hud glass">${left}<span class="hud-right">${right}</span></div>`;
 
 // MARK: - Enzyme Scissors
 
@@ -55,8 +76,7 @@ export function enzymeScissors(app) {
     for (let b = 0; b <= chain.bonds.length; b++) {
       html += bead(chain.isFiber, freed(chain, b));
       if (b < chain.bonds.length) {
-        const cut = chain.bonds[b];
-        html += cut
+        html += chain.bonds[b]
           ? '<span class="bond cut" aria-label="Cut bond">✨</span>'
           : `<button class="bond ${chain.isFiber ? 'beta' : 'alpha'}" data-action="cut" data-chain="${ci}" data-bond="${b}"
               ${s.roundDone ? 'disabled' : ''} aria-label="${chain.isFiber ? 'Fiber beta bond' : 'Starch alpha bond'}"><i>${chain.isFiber ? 'β' : 'α'}</i></button>`;
@@ -66,40 +86,38 @@ export function enzymeScissors(app) {
   }
 
   return {
-    title: 'Enzyme Scissors', back: '#play', bg: 'sunset',
+    tab: 'play', world: 'g-scissors', title: 'Enzyme Scissors', back: '#play',
     mount() { timer = setInterval(() => { const el = document.querySelector('[data-timer]'); if (el) el.textContent = `${elapsed()}s`; }, 1000); },
     destroy() { clearInterval(timer); },
     html() {
       if (s.result) {
-        return gameOver({ title: 'Snip-tastic!', ...s.result, lessons: [
+        return summary('scissors', s.result, [
           'Amylase cuts the alpha bonds in starch, first in your mouth and then in the small intestine.',
           'Maltase splits maltose into two glucose molecules that can be absorbed.',
           "Fiber has beta bonds that human enzymes can't cut. Gut microbes ferment it into short-chain fatty acids instead!",
-        ] });
+        ]);
       }
       const round = SCISSOR_ROUNDS[s.round];
       const glucose = s.chains.filter(c => !c.isFiber).reduce((n, c) => n + c.bonds.length + 1, 0);
       const hasFiber = s.chains.some(c => c.isFiber);
-      return `<div class="stack">
-        <div class="row between top">
-          <div><div class="eyebrow">Round ${s.round + 1} of ${SCISSOR_ROUNDS.length} · ${round.place}</div><h1 class="display sm">${esc(round.enzyme)}</h1></div>
-          <div class="row gap-s">${scoreBadge('Time', `${elapsed()}s`, '#3A86FF').replace('<b>', '<b data-timer>')}${scoreBadge('Score', score(), '#FF8C42')}</div>
-        </div>
+      return `<div class="stack game">
+        ${hud(`<div><span class="eyebrow">Round ${s.round + 1} of ${SCISSOR_ROUNDS.length} · ${round.place}</span><h1 class="display xs">${esc(round.enzyme)}</h1></div>`,
+          `${scoreBadge('Time', `${elapsed()}s`, '#2EC5E8').replace('<b>', '<b data-timer>')}${scoreBadge('Score', score(), '#FF8C42')}`)}
         ${speaker('amylase', s.message)}
         <div class="bead-board">${s.chains.map(chainRow).join('')}</div>
-        <div class="row gap legend">
+        <div class="legend-row">
           <span><i class="dot" style="background:#E76F51">α</i> Starch bond: CUT</span>
           <span><i class="dot" style="background:#2D6A4F">β</i> Fiber bond: SKIP</span>
         </div>
-        ${s.roundDone ? `<div class="card center stack pop">
-          <h2 class="display sm">Round complete! 🍬</h2>
+        ${s.roundDone ? `<div class="glass center stack-s pop">
+          <h2 class="display xs">Round complete! 🍬</h2>
           <p class="muted">You freed ${glucose} glucose molecules for the body to absorb.${hasFiber ? ' The fiber slides on to feed your gut microbes. 🦠' : ''}</p>
-          <button class="bubble" style="--b:#FF8C42" data-action="advance">${s.round + 1 < SCISSOR_ROUNDS.length ? 'Next round' : 'See results'}</button>
+          <button class="btn" style="--b:#FF8C42" data-action="advance">${s.round + 1 < SCISSOR_ROUNDS.length ? 'Next round' : 'See results'}</button>
         </div>` : ''}
       </div>`;
     },
     action(name, el) {
-      if (name === 'replay') { start(); return app.rerender(); }
+      if (name === 'replay') { start(); return app.rerender(true); }
       if (name === 'cut') {
         const ci = +el.dataset.chain;
         const chain = s.chains[ci];
@@ -110,6 +128,7 @@ export function enzymeScissors(app) {
           app.rerender();
           return shake(document.querySelector(`[data-chain-row="${ci}"]`));
         }
+        sparkle(el, '#FFC83D');
         chain.bonds[+el.dataset.bond] = true;
         s.cuts++;
         s.message = pick(['Snip! ✂️', 'Nice cut!', 'Glucose freed! ⚡️', 'Sweet!', 'Keep snipping!']);
@@ -119,8 +138,7 @@ export function enzymeScissors(app) {
       if (name === 'advance') {
         if (s.round + 1 < SCISSOR_ROUNDS.length) { startRound(s.round + 1); return app.rerender(true); }
         const final = score() + Math.max(0, 90 - elapsed()) * 2;
-        const count = final >= 300 ? 3 : final >= 220 ? 2 : 1;
-        s.result = { score: final, stars: count, isNewBest: store.record('scissors', final, count) };
+        s.result = finishRound('scissors', { title: 'Snip-tastic!', score: final, stars: final >= 300 ? 3 : final >= 220 ? 2 : 1 });
         return app.rerender(true);
       }
     },
@@ -150,39 +168,34 @@ export function fatRouter(app) {
   start();
 
   return {
-    title: 'Fat Traffic Control', back: '#play', bg: 'butter',
+    tab: 'play', world: 'g-fatRouter', title: 'Fat Traffic Control', back: '#play',
     html() {
-      if (s.outcome) {
-        return gameOver({ title: `${s.correct} of ${ROUNDS} fats routed!`, ...s.outcome,
-          lessons: ['short', 'medium', 'long'].map(r => FAT_ROUTES[r].explanation) });
-      }
+      if (s.outcome) return summary('fatRouter', s.outcome, ['short', 'medium', 'long'].map(r => FAT_ROUTES[r].explanation));
       const fat = s.queue[s.index];
       const route = FAT_ROUTES[routeForCarbons(fat.carbons)];
       const fb = s.feedback;
-      return `<div class="stack">
-        <div class="row between">
-          <span class="eyebrow">Fat ${s.index + 1} of ${ROUNDS}</span>
-          <span class="row gap-s">${s.streak >= 2 ? scoreBadge('Streak', `🔥${s.streak}`, '#FF595E') : ''}${scoreBadge('Score', s.score, '#F4B400')}</span>
-        </div>
-        <div class="card center stack-s" data-fat-card>
+      return `<div class="stack game">
+        ${hud(`<div><span class="eyebrow">Fat ${s.index + 1} of ${ROUNDS}</span>${bar((s.index + 1) / ROUNDS, '#F4B400')}</div>`,
+          `${s.streak >= 2 ? scoreBadge('Streak', `🔥${s.streak}`, '#FF595E') : ''}${scoreBadge('Score', s.score, '#F4B400')}`)}
+        <div class="glass center stack-s fat-card" data-fat-card>
           <span class="eyebrow">Incoming fatty acid!</span>
           <h1 class="display">${esc(fat.name)}</h1>
           ${carbonChain(fat.carbons)}
           <b class="carbons">${fat.carbons} carbons long</b>
           <small class="muted">The red ball is the acid head. Count the carbons in the zig-zag tail!</small>
         </div>
-        ${fb ? `<div class="card stack-s pop">
+        ${fb ? `<div class="glass stack-s pop">
             <h2 class="display xs ${fb.correct ? 'good' : 'bad'}">${fb.correct ? '✅ Correct route!' : `❌ Wrong way! It belongs on the ${esc(route.title)} ${route.emoji}`}</h2>
             <p>${esc(route.explanation)}</p>
             <p class="muted">💡 ${esc(fat.fact)}</p>
-            <button class="bubble" style="--b:#F4B400" data-action="next">${s.index + 1 < ROUNDS ? 'Next fat' : 'See results'}</button>
+            <button class="btn" style="--b:#F4B400" data-action="next">${s.index + 1 < ROUNDS ? 'Next fat' : 'See results'}</button>
           </div>`
         : `<h2 class="display xs center">Where should it go?</h2>
-          ${['short', 'medium', 'long'].map(id => {
+          <div class="routes">${['short', 'medium', 'long'].map(id => {
             const r = FAT_ROUTES[id];
-            return `<button class="route" style="--b:${r.color}" data-action="route" data-route="${id}">
+            return `<button class="route-btn" style="--b:${r.color}" data-action="route" data-route="${id}">
               <span class="route-emoji">${r.emoji}</span><span class="grow"><b>${r.title}</b><small>${r.rule}</small></span><span aria-hidden="true">➜</span></button>`;
-          }).join('')}`}
+          }).join('')}</div>`}
       </div>`;
     },
     action(name, el) {
@@ -194,6 +207,7 @@ export function fatRouter(app) {
           s.streak++;
           s.correct++;
           s.score += 10 + Math.min(s.streak - 1, 5) * 2;
+          sparkle(el, '#5FD3A6');
         } else {
           s.streak = 0;
         }
@@ -208,8 +222,7 @@ export function fatRouter(app) {
           s.index++;
         } else {
           const c = s.correct;
-          const count = c >= 11 ? 3 : c >= 8 ? 2 : c >= 4 ? 1 : 0;
-          s.outcome = { score: s.score, stars: count, isNewBest: store.record('fatRouter', s.score, count) };
+          s.outcome = finishRound('fatRouter', { title: `${c} of ${ROUNDS} fats routed!`, score: s.score, stars: c >= 11 ? 3 : c >= 8 ? 2 : c >= 4 ? 1 : 0 });
         }
         return app.rerender(true);
       }
@@ -221,18 +234,19 @@ export function fatRouter(app) {
 
 export function hormoneFactory() {
   return {
-    title: 'Hormone Factory', back: '#play', bg: 'night',
+    tab: 'play', world: 'g-factory', title: 'Hormone Factory', back: '#play',
     html() {
-      return `<div class="stack">
-        <div class="card row speaker">${face('ribosome', { size: 60, excited: true })}
-          <p class="grow">Welcome to the Hormone Factory! Pick an order, then choose the right starting molecule and helpers.</p></div>
-        <div class="grid tiles-150">${RECIPES.map(r => {
+      const built = RECIPES.filter(r => store.hormoneStars(r.id) > 0).length;
+      return `<div class="stack game">
+        ${speaker('ribosome', `Welcome to the Hormone Factory! Pick an order, then choose the right starting molecule and helpers. ${built}/${RECIPES.length} built so far.`)}
+        <div class="order-grid">${RECIPES.map(r => {
           const h = character(r.id);
           const n = store.hormoneStars(r.id);
           const loc = LOCATION[r.location];
-          return `<a class="tile" href="#hormone-${r.id}">
-            ${face(r.id, { size: 70, animated: n > 0, silhouette: n === 0 })}
-            <b>${esc(shortMolecule(h))}</b><small class="muted">${loc.emoji} ${esc(loc.name)}</small>${stars(n, 3, 13)}</a>`;
+          return `<a class="order${n ? ' built' : ''}" href="#hormone-${r.id}" style="--c:${h.color}">
+            <span class="ticket-top">Order</span>
+            ${pal(r.id, { size: 70, still: !n, mystery: n === 0 })}
+            <b>${n ? esc(shortMolecule(h)) : '???'}</b><small>${loc.emoji} ${esc(loc.name)}</small>${stars(n, 3, 'xs')}</a>`;
         }).join('')}</div>
       </div>`;
     },
@@ -257,7 +271,7 @@ export function hormoneBuild(app, id) {
   setUp();
 
   const stepHeader = (n, text) =>
-    `<div class="row gap-s step-head"><span class="num" style="background:${hormone.color}">${n}</span><h2 class="display xs">${esc(text)}</h2></div>`;
+    `<div class="step-head"><span class="num" style="background:${hormone.color}">${n}</span><h2 class="display xs">${esc(text)}</h2></div>`;
   const hint = () => (s.hint ? `<p class="hint bad" role="status">${esc(s.hint)}</p>` : '');
 
   function runAssembly() {
@@ -270,62 +284,63 @@ export function hormoneBuild(app, id) {
     });
     timers.push(setTimeout(() => {
       s.earned = s.mistakes === 0 ? 3 : s.mistakes <= 2 ? 2 : 1;
-      store.awardHormone(r.id, s.earned);
+      const gained = store.awardHormone(r.id, s.earned);
+      reward({ title: `${hormone.name} is ready!`, emoji: '🧪', stars: s.earned, gained, color: hormone.color });
       store.collect(r.id);
       r.chain.forEach(c => store.collect(c));
       s.stage = 'done';
       app.rerender();
-      confetti();
     }, r.chain.length * 1100));
   }
 
   const loc = LOCATION[r.location];
   return {
-    title: `Build ${firstName(hormone)}`, back: '#game-factory', bg: 'tint', tint: hormone.color,
+    tab: 'play', world: 'g-factory', title: `Build ${firstName(hormone)}`, back: '#game-factory',
     destroy() { timers.forEach(clearTimeout); },
     html() {
-      const ticket = `<div class="card row">${face(r.id, { size: 70, animated: s.stage === 'done', silhouette: s.stage !== 'done' })}
-        <div class="grow"><div class="eyebrow">Order up!</div><h1 class="display sm">${esc(hormone.molecule)}</h1>
+      const ticket = `<div class="glass ticket">${pal(r.id, { size: 70, still: s.stage !== 'done', mystery: s.stage !== 'done' && !store.isCollected(r.id) })}
+        <div class="grow"><span class="eyebrow">Order up!</span><h1 class="display xs">${esc(hormone.molecule)}</h1>
         <small class="muted">Made in: ${loc.emoji} ${esc(loc.name)}</small></div></div>`;
       let body = '';
       if (s.stage === 'precursor') {
         body = `${stepHeader(1, 'Pick the starting molecule')}
-          <div class="grid two" data-shake>${s.precursors.map(pid => `<button class="tile" data-action="precursor" data-id="${pid}">
-            ${face(pid, { size: 60, animated: false })}<b>${esc(shortMolecule(character(pid)))}</b></button>`).join('')}</div>${hint()}`;
+          <div class="grid two" data-shake>${s.precursors.map(pid => `<button class="pick" data-action="precursor" data-id="${pid}">
+            ${pal(pid, { size: 60, still: true, shadow: false })}<b>${esc(shortMolecule(character(pid)))}</b></button>`).join('')}</div>${hint()}`;
       } else if (s.stage === 'helpers') {
         const ready = s.selected.size === r.helpers.length;
         body = `${stepHeader(2, `Pick ${r.helpers.length} helpers the enzymes need`)}
-          <div class="row gap-s good strong">${face(r.precursor, { size: 44, animated: false })} Starting with ${esc(firstName(character(r.precursor)))} ✓</div>
+          <div class="picked-note good">${pal(r.precursor, { size: 40, still: true, shadow: false })} Starting with ${esc(firstName(character(r.precursor)))} ✓</div>
           <div class="grid two" data-shake>${s.helpers.map(t => {
             const on = s.selected.has(t.id);
             return `<button class="token${on ? ' on' : ''}" style="--b:${hormone.color}" aria-pressed="${on}" data-action="toggle" data-id="${t.id}">
               <span class="token-emoji">${t.emoji}</span><b>${esc(t.name)}</b></button>`;
           }).join('')}</div>${hint()}
-          <button class="bubble" style="--b:${hormone.color}" data-action="check" ${ready ? '' : 'disabled'}>⚙️ Start the machine!</button>`;
+          <button class="btn big" style="--b:${hormone.color}" data-action="check" ${ready ? '' : 'disabled'}>⚙️ Start the machine!</button>`;
       } else if (s.stage === 'assembling') {
         const cur = r.chain[s.assembly];
-        body = `<div class="card center stack">${stepHeader(3, 'Assembly line running...')}
+        body = `<div class="glass center stack assembly">${stepHeader(3, 'Assembly line running...')}
           <div class="gears" style="color:${hormone.color}" aria-hidden="true"><span>⚙</span><span>⚙</span><span>⚙</span></div>
-          <div class="pop" key="${s.assembly}">${face(cur, { size: 140, excited: true })}</div>
-          <h2 class="display sm">${esc(character(cur).name)}</h2>
-          <div class="segments">${r.chain.map((_, i) => `<span style="background:${i <= s.assembly ? hormone.color : '#DADCE3'}"></span>`).join('')}</div>
+          <div class="pop">${pal(cur, { size: 140, excited: true })}</div>
+          <h2 class="display xs">${esc(character(cur).name)}</h2>
+          <div class="segments">${r.chain.map((_, i) => `<span style="background:${i <= s.assembly ? hormone.color : 'rgba(31,36,71,.12)'}"></span>`).join('')}</div>
         </div>`;
       } else {
-        body = `<div class="card center stack pop">
-          <h2 class="display sm">${esc(hormone.name)} is ready! 🎉</h2>${stars(s.earned, 3, 30)}
+        body = `<div class="glass center stack pop">
+          <h2 class="display xs">${esc(hormone.name)} is ready! 🎉</h2>${stars(s.earned, 3, 'big')}
           ${transformationChain(r.chain, 50)}
           <p class="left">${esc(r.lesson)}</p>
           <p class="strong" style="color:${hormone.color}">“${esc(hormone.catchphrase)}”</p>
-          <div class="row gap buttons"><button class="bubble white" data-action="again">↻ Again</button>
-          <a class="bubble" style="--b:${hormone.color}" href="#game-factory">More orders</a></div>
+          <div class="row buttons"><button class="btn ghost" data-action="again">↻ Again</button>
+          <a class="btn" style="--b:${hormone.color}" href="#game-factory">More orders</a></div>
         </div>`;
       }
-      return `<div class="stack">${ticket}${body}</div>`;
+      return `<div class="stack game">${ticket}${body}</div>`;
     },
     action(name, el) {
       if (name === 'again') { setUp(); return app.rerender(true); }
       if (name === 'precursor') {
         if (el.dataset.id === r.precursor) {
+          sparkle(el, '#5FD3A6');
           s.hint = null;
           s.stage = 'helpers';
           return app.rerender();
@@ -374,24 +389,22 @@ export function ribosomeRush(app) {
   start();
 
   return {
-    title: 'Ribosome Rush', back: '#play', bg: 'lagoon',
+    tab: 'play', world: 'g-proteinBuilder', title: 'Ribosome Rush', back: '#play',
     html() {
       if (s.outcome) {
-        return gameOver({ title: 'Protein factory champion!', ...s.outcome, lessons: [
+        return summary('proteinBuilder', s.outcome, [
           'Ribosomes link amino acids in the exact order written in your DNA (copied into mRNA).',
           "Nine amino acids are essential (⭐): your body can't make them, so they must come from food.",
           'Many hormones, like insulin, oxytocin and vasopressin, are just short chains of amino acids!',
-        ] });
+        ]);
       }
       const level = PEPTIDES[s.level];
       const seq = [...level.sequence];
-      return `<div class="stack">
-        <div class="row between">
-          <div><div class="eyebrow">Level ${s.level + 1} of ${PEPTIDES.length}</div><h1 class="display sm">${level.emoji} ${esc(level.name)}</h1></div>
-          ${scoreBadge('Score', s.total, '#00A6C8')}
-        </div>
+      return `<div class="stack game">
+        ${hud(`<div><span class="eyebrow">Level ${s.level + 1} of ${PEPTIDES.length}</span><h1 class="display xs">${level.emoji} ${esc(level.name)}</h1></div>`,
+          scoreBadge('Score', s.total, '#00A6C8'))}
         ${speaker('ribosome', s.message)}
-        <div class="card" data-shake><div class="eyebrow">mRNA recipe</div>
+        <div class="glass" data-shake><span class="eyebrow">mRNA recipe</span>
           <div class="flow slots">${seq.map((code, i) => {
             const a = amino(code);
             const filled = i < s.placed;
@@ -399,10 +412,10 @@ export function ribosomeRush(app) {
             return `<span class="slot${filled ? ' filled' : ''}${next ? ' next' : ''}" style="--c:${a.color}">
               <span class="ball">${a.short}</span><span class="marker">${next ? '🏭' : ''}</span></span>`;
           }).join('')}</div></div>
-        ${s.done ? `<div class="card center stack pop">
-            <h2 class="display sm">${esc(level.name)} built! 🎉</h2><p class="left">${esc(level.fact)}</p>
-            <button class="bubble" style="--b:#00A6C8" data-action="next">${s.level + 1 < PEPTIDES.length ? 'Next protein' : 'See results'}</button></div>`
-        : `<div class="card"><div class="eyebrow">Amino acid supply · ⭐ = essential</div>
+        ${s.done ? `<div class="glass center stack pop">
+            <h2 class="display xs">${esc(level.name)} built! 🎉</h2><p class="left">${esc(level.fact)}</p>
+            <button class="btn" style="--b:#00A6C8" data-action="next">${s.level + 1 < PEPTIDES.length ? 'Next protein' : 'See results'}</button></div>`
+        : `<div class="glass"><span class="eyebrow">Amino acid supply · ⭐ = essential</span>
             <div class="grid aminos">${s.palette.map(code => {
               const a = amino(code);
               return `<button class="amino" style="--b:${a.color}" data-action="tap" data-code="${code}" aria-label="${a.name}${a.essential ? ', essential' : ''}">
@@ -418,6 +431,7 @@ export function ribosomeRush(app) {
         const expected = amino(seq[s.placed]);
         const a = amino(el.dataset.code);
         if (a.code === expected.code) {
+          sparkle(el, a.color);
           s.placed++;
           s.message = a.essential
             ? `${a.name} linked! ⭐ It's essential, so it has to come from food.`
@@ -435,10 +449,7 @@ export function ribosomeRush(app) {
       }
       if (name === 'next') {
         if (s.level + 1 < PEPTIDES.length) startLevel(s.level + 1);
-        else {
-          const count = s.total >= 450 ? 3 : s.total >= 350 ? 2 : 1;
-          s.outcome = { score: s.total, stars: count, isNewBest: store.record('proteinBuilder', s.total, count) };
-        }
+        else s.outcome = finishRound('proteinBuilder', { title: 'Protein factory champion!', score: s.total, stars: s.total >= 450 ? 3 : s.total >= 350 ? 2 : 1 });
         return app.rerender(true);
       }
     },
@@ -454,28 +465,32 @@ export function quiz(app) {
   start();
 
   return {
-    title: 'Molecule Quiz', back: '#play', bg: 'candy',
+    tab: 'play', world: 'g-quiz', title: 'Molecule Quiz', back: '#play',
     html() {
       if (s.outcome) {
-        return gameOver({ title: `${s.correct} of ${s.questions.length} correct!`, ...s.outcome, lessons: [
+        return summary('quiz', s.outcome, [
           "Carbs, fats and proteins are all broken into small pieces before they're absorbed.",
           'Vitamins and minerals are the helpers enzymes need to build hormones and make energy.',
           'Hormones are made from food molecules: amino acids, cholesterol, iodine and more!',
-        ] });
+        ]);
       }
       const answered = s.card.picked != null;
-      return `<div class="stack">
-        <div class="row between"><span class="eyebrow">Question ${s.index + 1} of ${s.questions.length}</span>${scoreBadge('Correct', s.correct, 'var(--good)')}</div>
-        ${progress((s.index + 1) / s.questions.length)}
-        <div class="center">${face('mito', { size: 90, excited: answered })}</div>
+      return `<div class="stack game">
+        ${hud(`<div><span class="eyebrow">Question ${s.index + 1} of ${s.questions.length}</span>${bar((s.index + 1) / s.questions.length)}</div>`,
+          scoreBadge('Correct', s.correct, '#2DC653'))}
+        <div class="quiz-host">${pal('mito', { size: 96, excited: answered })}</div>
         ${questionCard(s.questions[s.index], s.card)}
-        ${answered ? `<button class="bubble pop" data-action="next">${s.index + 1 < s.questions.length ? 'Next question' : 'See results'}</button>` : ''}
+        ${answered ? `<button class="btn big pop" data-action="next">${s.index + 1 < s.questions.length ? 'Next question' : 'See results'}</button>` : ''}
       </div>`;
     },
-    answer(i) {
+    answer(i, el) {
       if (s.card.picked != null) return;
       s.card.picked = s.card.choices[i];
-      if (s.card.picked === s.questions[s.index].correct) s.correct++;
+      if (s.card.picked === s.questions[s.index].correct) {
+        s.correct++;
+        store.answeredCorrectly();
+        sparkle(el, '#5FD3A6');
+      }
       app.rerender();
     },
     action(name) {
@@ -485,10 +500,8 @@ export function quiz(app) {
           s.index++;
           s.card = {};
         } else {
-          const score = s.correct * 10;
           const c = s.correct;
-          const count = c >= 9 ? 3 : c >= 7 ? 2 : c >= 4 ? 1 : 0;
-          s.outcome = { score, stars: count, isNewBest: store.record('quiz', score, count) };
+          s.outcome = finishRound('quiz', { title: `${c} of ${s.questions.length} correct!`, score: c * 10, stars: c >= 9 ? 3 : c >= 7 ? 2 : c >= 4 ? 1 : 0 });
         }
         return app.rerender(true);
       }

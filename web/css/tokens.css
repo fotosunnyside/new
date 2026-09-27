@@ -1,0 +1,67 @@
+/* NutriQuest design tokens: "Magical Science Adventure".
+   Light, luminous and single-theme on purpose, like the iOS app (preferredColorScheme(.light)). */
+:root {
+  color-scheme: light;
+
+  /* Color */
+  --navy: #1F2447;          /* all readable text */
+  --navy-soft: #4E5382;
+  --navy-faint: rgba(31, 36, 71, .12);
+  --aqua: #2EC5E8;
+  --cyan: #7FE3F5;
+  --coral: #FF7A6B;
+  --pink: #FF5C8A;
+  --mango: #FFB547;
+  --gold: #FFC83D;
+  --gold-deep: #C98A00;
+  --lavender: #A78BFA;
+  --mint: #5FD3A6;
+  --cream: #FFF7EC;
+  --good: #2DC653;
+  --good-ink: #16873A;
+  --bad: #EF476F;
+
+  /* Glass */
+  --glass: rgba(255, 255, 255, .62);
+  --glass-strong: rgba(255, 255, 255, .82);
+  --glass-edge: rgba(255, 255, 255, .85);
+  --glass-blur: saturate(1.5) blur(18px);
+
+  /* Shape */
+  --r-s: 12px;
+  --r-m: 18px;
+  --r-l: 26px;
+  --r-xl: 34px;
+  --r-pill: 999px;
+
+  /* Space */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --gutter: 16px;
+
+  /* Depth */
+  --lift-1: 0 2px 0 rgba(255, 255, 255, .9) inset, 0 6px 18px rgba(49, 44, 120, .10);
+  --lift-2: 0 2px 0 rgba(255, 255, 255, .9) inset, 0 14px 34px rgba(49, 44, 120, .16);
+  --press: 0 5px 0 rgba(31, 36, 71, .18);
+
+  /* Type */
+  --font-display: 'Fredoka', 'Nunito', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  --font-body: 'Nunito', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Motion */
+  --t-fast: 140ms;
+  --t-med: 280ms;
+  --t-slow: 520ms;
+  --ease-pop: cubic-bezier(.3, 1.55, .5, 1);
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+
+  /* Chrome */
+  --bar-h: 60px;
+  --nav-h: 72px;
+  --rail-w: 104px;
+  --tint: transparent;
+}
