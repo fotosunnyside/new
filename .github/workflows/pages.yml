@@ -1,0 +1,36 @@
+name: Publish web game
+
+# Copies web/ to the gh-pages branch, which GitHub Pages serves at
+# https://fotosunnyside.github.io/new/ (Settings → Pages → Deploy from a branch → gh-pages).
+on:
+  push:
+    branches: [ "claude/cool-planck-ygtbzq", "claude/nutrient-breakdown-ios-game-xmnolo" ]
+    paths: [ "web/**", ".github/workflows/pages.yml" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-web-game
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push web/ to gh-pages
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          cp -r web/index.html web/icon.png web/css web/js "$RUNNER_TEMP/site/"
+          touch "$RUNNER_TEMP/site/.nojekyll"
+          cd "$RUNNER_TEMP/site"
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish web game from ${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages

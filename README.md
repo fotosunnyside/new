@@ -54,7 +54,7 @@ python3 -m http.server --directory web 8000
 # then open http://localhost:8000
 ```
 
-To put it online, serve the `web/` folder from any static host, for example GitHub Pages (deploy from a branch or with a Pages workflow that uploads `web/`).
+It's published with GitHub Pages at **https://fotosunnyside.github.io/new/**. The `Publish web game` workflow copies `web/` to the `gh-pages` branch whenever `web/` changes, and Pages serves that branch (Settings → Pages → Deploy from a branch → `gh-pages`, `/ (root)`). You can also upload the contents of `web/` to any other static host.
 
 The educational content is not copied by hand. `web/js/content.js` is generated from `NutriQuest/Content/*.swift`, so the iOS app stays the single source of truth. After you edit the Swift content, regenerate it:
 
